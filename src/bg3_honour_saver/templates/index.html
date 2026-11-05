@@ -6,6 +6,12 @@
         <button type="submit" class="button{% if primary %} primary{% endif %}">{{ t(label) }}</button>
     </form>
 {%- endmacro %}
+{% macro studio_wordmark(href) -%}
+    <a class="wordmark" href="{{ href }}" aria-label="{{ t('brand') }}">
+        <span class="wordmark-name">SableFiSh</span>
+        <span class="wordmark-studio">STUDIO</span>
+    </a>
+{%- endmacro %}
 <!doctype html>
 <html lang="{{ 'en' if lang == 'en' else 'zh-CN' }}">
 <head>
@@ -13,7 +19,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"includeIndicatorStyles":false}'>
     <title>{{ t('title') }} · {{ t('brand') }}</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&amp;family=Noto+Sans+SC:wght@300;400;500;600&amp;display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600&amp;display=swap">
     <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
     <script defer src="{{ url_for('static', path='app.js') }}"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.11/dist/htmx.min.js"
@@ -21,11 +27,9 @@
             crossorigin="anonymous"></script>
 </head>
 <body>
-    <header class="site-header">
-        {% if page == 'exiting' %}
-            <span class="wordmark">{{ t('brand') }}</span>
-        {% else %}
-            <a class="wordmark" href="{{ url_for('home') }}">{{ t('brand') }}</a>
+    <header id="top" class="site-header">
+        {{ studio_wordmark('#top' if page == 'exiting' else url_for('home')) }}
+        {% if page != 'exiting' %}
             <div class="header-actions">
                 <nav class="languages" aria-label="Language">
                     {% set language_url = url_for('home') if page == 'error' else request.url %}
@@ -116,5 +120,18 @@
             {% endif %}
         {% endif %}
     </main>
+    <footer class="site-footer">
+        <div class="footer-left">
+            <nav class="footer-links" aria-label="{{ t('studio_links') }}">
+                <a href="https://www.youtube.com/@SableFiSh" target="_blank" rel="noopener noreferrer">Youtube</a>
+                <a href="https://space.bilibili.com/49323671" target="_blank" rel="noopener noreferrer">Bilibili</a>
+                <a href="https://www.artstation.com/sablefish" target="_blank" rel="noopener noreferrer">ArtStation</a>
+                <a href="mailto:sablefish357@gmail.com">sablefish357@gmail.com</a>
+                <a href="#top">{{ t('back_to_top') }}</a>
+            </nav>
+            <p class="copyright">© {{ year }} SableFiSh. All Rights Reserved.</p>
+        </div>
+        {{ studio_wordmark('#top') }}
+    </footer>
 </body>
 </html>

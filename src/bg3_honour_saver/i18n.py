@@ -1,6 +1,8 @@
 MESSAGES = {
     "title": ("荣誉模式存档", "Honour Mode Saves"),
-    "brand": ("博德之门 3", "Baldur’s Gate 3"),
+    "brand": ("SableFiSh Studio", "SableFiSh Studio"),
+    "back_to_top": ("回到顶部", "Top"),
+    "studio_links": ("工作室链接", "Studio links"),
     "tagline": ("本地备份与恢复", "Local backup and restore"),
     "home": ("返回首页", "Back to dashboard"),
     "exit": ("退出程序", "Exit"),

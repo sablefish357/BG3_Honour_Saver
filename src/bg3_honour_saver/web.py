@@ -123,6 +123,7 @@ def create_app() -> FastAPI:
                 "t": lambda key: translate(language, key),
                 "csrf": csrf,
                 "game_id": game_id,
+                "year": datetime.now().year,
                 **context,
             },
         )
