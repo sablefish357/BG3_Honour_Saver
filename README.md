@@ -10,9 +10,10 @@ BG3 Honour Saver is a Windows utility for recording successive versions of a sel
 
 ### Requirements and use
 
-The project requires Windows, [uv](https://docs.astral.sh/uv/), and Python 3.13 or later with Tk support for the native folder dialog. Run the following command from the repository directory.
+The project requires Windows, [uv](https://docs.astral.sh/uv/), and Python 3.13 or later with Tk support for the native folder dialog. From the repository directory, run `uv sync` to install the project and its dependencies, then start the application.
 
 ```powershell
+uv sync
 uv run bg3-honour-saver
 ```
 
@@ -53,9 +54,10 @@ BG3 Honour Saver 是一个 Windows 本地工具，用于记录《博德之门 3�
 
 ### 运行环境与操作流程
 
-项目需要 Windows、[uv](https://docs.astral.sh/uv/) 和 Python 3.13 或更高版本。Windows 原生目录选择器需要 Python 环境包含 Tk。请在仓库目录运行以下命令。
+项目需要 Windows、[uv](https://docs.astral.sh/uv/) 和 Python 3.13 或更高版本。Windows 原生目录选择器需要 Python 环境包含 Tk。在仓库目录先运行 `uv sync` 安装项目和依赖，再启动应用。
 
 ```powershell
+uv sync
 uv run bg3-honour-saver
 ```
 
