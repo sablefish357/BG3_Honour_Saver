@@ -33,6 +33,9 @@ ul { list-style: none; padding: 0; margin: 0; }
 }
 
 .wordmark { font-size: 1.05rem; font-weight: 500; letter-spacing: 0.035em; text-decoration: none; }
+.header-actions { display: flex; align-items: center; gap: 1.5rem; }
+.exit-button { border: 0; background: none; padding: 0; color: #944438; font-size: 0.9rem; }
+.exit-button:hover { text-decoration: underline; text-underline-offset: 0.25em; }
 .languages { display: flex; gap: 1rem; font-size: 0.9rem; }
 .languages a { color: var(--muted); text-decoration: none; }
 .languages a[aria-current], .languages a:hover { color: var(--ink); text-decoration: underline; }
@@ -114,6 +117,8 @@ main { width: min(calc(100% - 2.5rem), 57rem); margin: 0 auto; padding: 0 0 5rem
 .restore-summary { border-top: 0; grid-template-columns: minmax(12rem, 22rem) minmax(0, 1fr); }
 .confirm { display: flex; align-items: flex-start; gap: 0.5rem; margin-top: 1.2rem; }
 .confirm input { margin-top: 0.42rem; accent-color: var(--accent); }
+.confirm.invalid { color: #944438; }
+.confirm.invalid input { outline: 1px solid #944438; outline-offset: 2px; }
 
 @media (max-width: 850px) {
     .version { grid-template-columns: minmax(12rem, 18rem) minmax(0, 1fr); }

@@ -27,6 +27,11 @@ def main() -> None:
                 url = f"http://{self.config.host}:{self.config.port}/"
                 Thread(target=open_home, args=(url,), daemon=True).start()
 
+        async def on_tick(self, counter: int) -> bool:
+            if app.state.shutdown_requested.is_set():
+                self.should_exit = True
+            return await super().on_tick(counter)
+
         async def shutdown(self, sockets=None) -> None:
             app.state.folder_picker_shutdown.set()
             await super().shutdown(sockets=sockets)

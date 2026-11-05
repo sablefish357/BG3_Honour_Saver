@@ -19,7 +19,7 @@
         <input type="hidden" name="token" value="{{ csrf }}">
         <input type="hidden" name="revision" value="{{ view.revision }}">
         <input type="hidden" name="story" value="{{ story }}">
-        <label class="confirm"><input type="checkbox" name="confirmed" value="yes" required> {{ t('restore_confirm') }}</label>
+        <label class="confirm"><input type="checkbox" name="confirmed" value="yes" required data-restore-confirm> {{ t('restore_confirm') }}</label>
         <div class="form-actions">
             <a class="button" href="{{ url_for('home') }}">{{ t('cancel') }}</a>
             <button type="submit" class="button primary">{{ t('restore') }}</button>

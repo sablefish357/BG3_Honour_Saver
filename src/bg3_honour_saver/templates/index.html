@@ -15,23 +15,38 @@
     <title>{{ t('title') }} · {{ t('brand') }}</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&amp;family=Noto+Sans+SC:wght@300;400;500;600&amp;display=swap">
     <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
+    <script defer src="{{ url_for('static', path='app.js') }}"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.11/dist/htmx.min.js"
             integrity="sha384-2OatzQy1H+Zd/IIrjr1TcuDGqLXeHhbooAyJY1KdQMKnr4LZ22k31GBLdYKHmVjg"
             crossorigin="anonymous"></script>
-    <script defer src="{{ url_for('static', path='app.js') }}"></script>
 </head>
 <body>
     <header class="site-header">
-        <a class="wordmark" href="{{ url_for('home') }}">{{ t('brand') }}</a>
-        <nav class="languages" aria-label="Language">
-            {% set language_url = url_for('home') if page == 'error' else request.url %}
-            <a href="{{ language_url.include_query_params(lang='zh') }}" lang="zh-CN" {% if lang == 'zh' %}aria-current="true"{% endif %}>中文</a>
-            <a href="{{ language_url.include_query_params(lang='en') }}" lang="en" {% if lang == 'en' %}aria-current="true"{% endif %}>EN</a>
-        </nav>
+        {% if page == 'exiting' %}
+            <span class="wordmark">{{ t('brand') }}</span>
+        {% else %}
+            <a class="wordmark" href="{{ url_for('home') }}">{{ t('brand') }}</a>
+            <div class="header-actions">
+                <nav class="languages" aria-label="Language">
+                    {% set language_url = url_for('home') if page == 'error' else request.url %}
+                    <a href="{{ language_url.include_query_params(lang='zh') }}" lang="zh-CN" {% if lang == 'zh' %}aria-current="true"{% endif %}>中文</a>
+                    <a href="{{ language_url.include_query_params(lang='en') }}" lang="en" {% if lang == 'en' %}aria-current="true"{% endif %}>EN</a>
+                </nav>
+                <form method="post" action="{{ url_for('exit_program') }}" data-submit-once>
+                    <input type="hidden" name="token" value="{{ csrf }}">
+                    <button type="submit" class="exit-button">{{ t('exit') }}</button>
+                </form>
+            </div>
+        {% endif %}
     </header>
 
     <main>
-        {% if page == 'restore' %}
+        {% if page == 'exiting' %}
+            <section class="hero">
+                <h1>{{ t('exiting') }}</h1>
+                <p class="muted">{{ t('exit_help') }}</p>
+            </section>
+        {% elif page == 'restore' %}
             {% include 'partials/restore.html' %}
         {% elif page == 'error' %}
             <section class="hero">

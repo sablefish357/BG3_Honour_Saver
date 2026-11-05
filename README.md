@@ -19,6 +19,8 @@ uv run bg3-honour-saver
 
 The program opens the [local dashboard](http://127.0.0.1:8765/) once the server is ready.
 
+Use **Exit** in the dashboard header to stop the application after current operations finish.
+
 1. **Open a backup library.** Select an existing library or an empty folder to initialize one. Neither the library nor the game’s `Story` directory can contain the other.
 2. **Select a save.** The application looks for `Story` under `%LOCALAPPDATA%\Larian Studios\Baldur's Gate 3\PlayerProfiles\Public\Savegames\Story`. You can choose a different directory through the Windows folder dialog. A slot appears in the list once it contains `HonourMode.lsv`.
 3. **Start watching.** Select one slot and leave the program running while you play. The browser tab can be closed. Each captured version appears in the history with its size, the game file’s last modification time, the backup time, and a thumbnail when the game provides one.
@@ -63,6 +65,8 @@ uv run bg3-honour-saver
 ```
 
 服务就绪后，程序会自动打开一次[本地控制台](http://127.0.0.1:8765/)。
+
+点击网页右上角的「退出程序」，程序会在当前操作完成后关闭。
 
 1. **打开资料库。** 可选择已有资料库，也可选择空文件夹进行初始化。资料库与游戏的 `Story` 目录不能互相包含。
 2. **选择存档。** 程序默认查找 `%LOCALAPPDATA%\Larian Studios\Baldur's Gate 3\PlayerProfiles\Public\Savegames\Story`。如有需要，可通过 Windows 文件夹选择器更换路径。档位中出现 `HonourMode.lsv` 后，就可以在列表中选择它。

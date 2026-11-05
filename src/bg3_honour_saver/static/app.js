@@ -4,6 +4,24 @@ document.addEventListener("submit", (event) => {
     }
 });
 
+document.addEventListener("invalid", (event) => {
+    const checkbox = event.target;
+    if (checkbox.matches("[data-restore-confirm]")) {
+        event.preventDefault();
+        checkbox.closest(".confirm").classList.add("invalid");
+        checkbox.setAttribute("aria-invalid", "true");
+        checkbox.focus();
+    }
+}, true);
+
+document.addEventListener("change", (event) => {
+    const checkbox = event.target;
+    if (checkbox.matches("[data-restore-confirm]") && checkbox.checked) {
+        checkbox.closest(".confirm").classList.remove("invalid");
+        checkbox.removeAttribute("aria-invalid");
+    }
+});
+
 window.addEventListener("pageshow", () => {
     for (const button of document.querySelectorAll("[data-submit-once] button[type=submit]")) {
         button.disabled = false;
@@ -31,6 +49,9 @@ for (const img of document.querySelectorAll(".preview img")) {
 // Keep polling when the CDN is unavailable. All forms are ordinary HTML forms.
 if (!window.htmx && document.querySelector("[data-poll]")) {
     const poll = async () => {
+        if (window.htmx) {
+            return;
+        }
         const panels = [...document.querySelectorAll("[data-poll]")];
         await Promise.allSettled(panels.map(async (panel) => {
             const response = await fetch(panel.dataset.poll, { cache: "no-store" });

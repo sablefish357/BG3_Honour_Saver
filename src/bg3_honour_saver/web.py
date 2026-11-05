@@ -14,6 +14,7 @@ from fastapi import FastAPI, Form, Request
 from fastapi.responses import FileResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.background import BackgroundTask
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.types import Receive, Scope, Send
 
@@ -74,6 +75,7 @@ def create_app() -> FastAPI:
     csrf = secrets.token_urlsafe(32)
     folder_dialog = Lock()
     folder_picker_shutdown = Event()
+    shutdown_requested = Event()
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -84,6 +86,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     app.state.folder_picker_shutdown = folder_picker_shutdown
+    app.state.shutdown_requested = shutdown_requested
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1"])
     app.mount("/static", StaticFiles(directory=ASSETS / "static"), name="static")
     templates = Jinja2Templates(directory=ASSETS / "templates")
@@ -187,6 +190,13 @@ def create_app() -> FastAPI:
             request, "index.html", page="home", view=view, restored=restored,
             **setup(view), **dashboard(view),
         )
+
+    @app.post("/exit")
+    def exit_program(request: Request, token: Field):
+        check_token(token)
+        response = render(request, "index.html", page="exiting")
+        response.background = BackgroundTask(shutdown_requested.set)
+        return response
 
     @app.get("/dashboard")
     def dashboard_fragment(request: Request, revision: str, story_available: bool):
