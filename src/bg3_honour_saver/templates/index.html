@@ -1,0 +1,91 @@
+{% macro folder_button(purpose, label, primary=false) -%}
+    <form method="post" action="{{ url_for('pick_directory') }}" data-submit-once>
+        <input type="hidden" name="token" value="{{ csrf }}">
+        <input type="hidden" name="purpose" value="{{ purpose }}">
+        {% if view %}<input type="hidden" name="revision" value="{{ view.revision }}">{% endif %}
+        <button type="submit" class="button{% if primary %} primary{% endif %}">{{ t(label) }}</button>
+    </form>
+{%- endmacro %}
+<!doctype html>
+<html lang="{{ 'en' if lang == 'en' else 'zh-CN' }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"includeIndicatorStyles":false}'>
+    <title>{{ t('title') }} · {{ t('brand') }}</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&amp;family=Noto+Sans+SC:wght@300;400;500;600&amp;display=swap">
+    <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
+    <script defer src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.11/dist/htmx.min.js"
+            integrity="sha384-2OatzQy1H+Zd/IIrjr1TcuDGqLXeHhbooAyJY1KdQMKnr4LZ22k31GBLdYKHmVjg"
+            crossorigin="anonymous"></script>
+    <script defer src="{{ url_for('static', path='app.js') }}"></script>
+</head>
+<body>
+    <header class="site-header">
+        <a class="wordmark" href="{{ url_for('home') }}">{{ t('brand') }}</a>
+        <nav class="languages" aria-label="Language">
+            {% set language_url = url_for('home') if page == 'error' else request.url %}
+            <a href="{{ language_url.include_query_params(lang='zh') }}" lang="zh-CN" {% if lang == 'zh' %}aria-current="true"{% endif %}>中文</a>
+            <a href="{{ language_url.include_query_params(lang='en') }}" lang="en" {% if lang == 'en' %}aria-current="true"{% endif %}>EN</a>
+        </nav>
+    </header>
+
+    <main>
+        {% if page == 'restore' %}
+            {% include 'partials/restore.html' %}
+        {% elif page == 'error' %}
+            <section class="hero">
+                <h1>{{ t('error') }}</h1>
+                <p>{{ t(message.key) }}</p>
+                {% if message.detail %}<p class="path">{{ message.detail | display_paths }}</p>{% endif %}
+                <a class="button" href="{{ url_for('home') }}">{{ t('home') }}</a>
+            </section>
+        {% else %}
+            <section class="hero">
+                <p class="eyebrow">{{ t('tagline') }}</p>
+                <h1>{{ t('title') }}</h1>
+            </section>
+            {% if restored %}<p class="message success" role="status">{{ t('restore_done') }}</p>{% endif %}
+            {% if not view %}
+                <section class="section intro">
+                    <h2>{{ t('library') }}</h2>
+                    <p>{{ t('library_intro') }}</p>
+                    {{ folder_button('library', 'open_library', primary=true) }}
+                </section>
+            {% else %}
+                <section class="section setup" aria-label="{{ t('library') }}">
+                    <div class="setting-row">
+                        <div>
+                            <h2>{{ t('library') }}</h2>
+                            <p class="path">{{ view.workspace.root | display_paths }}</p>
+                        </div>
+                        {{ folder_button('library', 'change_library') }}
+                    </div>
+                    <div class="setting-row">
+                        <div>
+                            <h2>{{ t('story') }}</h2>
+                            {% if story %}
+                                <p class="path">{{ story | display_paths }}</p>
+                            {% else %}
+                                <p class="muted">{{ t('choose_story') }}</p>
+                                <p class="path">{{ t('default_path') }} · {{ default_story | display_paths }}</p>
+                            {% endif %}
+                        </div>
+                        {{ folder_button('story', 'change_story') }}
+                    </div>
+                    {% if notice %}
+                        <p class="message" role="status">{{ t(notice.key) }} {% if notice.detail %}<span class="path">{{ notice.detail | display_paths }}</span>{% endif %}</p>
+                    {% endif %}
+                    {% if story %}
+                        <details {% if not view.settings.slot_name %}open{% endif %}>
+                            <summary>{{ t('choose_save') }}</summary>
+                            {% include 'partials/candidates.html' %}
+                        </details>
+                    {% endif %}
+                </section>
+                {% include 'partials/dashboard.html' %}
+            {% endif %}
+        {% endif %}
+    </main>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{% if view and story %}
+    {% set endpoint = url_for('candidate_fragment').include_query_params(revision=view.revision) %}
+    <div id="candidates"
+         {% if not candidates %}data-poll="{{ endpoint }}"
+         hx-get="{{ endpoint }}" hx-trigger="every 5s" hx-swap="outerHTML"{% endif %}>
+        {% if candidates %}
+            <ul class="candidates">
+                {% for candidate in candidates %}
+                    <li class="setting-row">
+                        <div>
+                            <strong class="game-id">{{ candidate.game_id }}</strong>
+                            <p class="muted">{{ candidate.modified_at | timestamp }}</p>
+                        </div>
+                        {% if not (view.settings.enabled and view.settings.slot_name == candidate.name) %}
+                            <form method="post" action="{{ url_for('watch') }}">
+                                <input type="hidden" name="token" value="{{ csrf }}">
+                                <input type="hidden" name="revision" value="{{ view.revision }}">
+                                <input type="hidden" name="slot_name" value="{{ candidate.name }}">
+                                <button type="submit" class="button">{{ t('start') }}</button>
+                            </form>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="muted">{{ t('no_candidates') }}</p>
+        {% endif %}
+        <a id="refresh-candidates" class="quiet-link" href="{{ url_for('home') }}">{{ t('refresh') }}</a>
+    </div>
+{% endif %}

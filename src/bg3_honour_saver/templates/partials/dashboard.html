@@ -1,0 +1,61 @@
+{% if view %}
+    {% set endpoint = url_for('dashboard_fragment').include_query_params(revision=view.revision, story_available=1 if restore_available else 0) %}
+    <div id="dashboard" data-poll="{{ endpoint }}"
+         hx-get="{{ endpoint }}" hx-trigger="every 5s" hx-swap="outerHTML">
+        <section class="watch-panel" aria-label="{{ t('latest') }}">
+            <div>
+                <p class="status-line">
+                    <span class="status-dot {% if watch_status.key in ('watching', 'backing_up', 'restoring') %}active{% endif %}" aria-hidden="true"></span>
+                    {{ t(watch_status.key) }}
+                    {% if view.settings.slot_name %} · <strong class="game-id">{{ game_id(view.settings.slot_name) }}</strong>{% endif %}
+                </p>
+                {% if watch_status.detail %}<p class="muted path">{{ watch_status.detail | display_paths }}</p>{% endif %}
+            </div>
+            <div class="watch-actions">
+                <p class="muted">{{ t('latest') }} · {% if history %}{{ history[0].backed_up_at | timestamp }}{% else %}—{% endif %}</p>
+                {% if view.watcher %}
+                    <form method="post" action="{{ url_for('pause') }}">
+                        <input type="hidden" name="token" value="{{ csrf }}">
+                        <input type="hidden" name="revision" value="{{ view.revision }}">
+                        <button id="watch-action" type="submit" class="button">{{ t('pause') }}</button>
+                    </form>
+                {% elif view.settings.slot_name and restore_available %}
+                    <form method="post" action="{{ url_for('watch') }}">
+                        <input type="hidden" name="token" value="{{ csrf }}">
+                        <input type="hidden" name="revision" value="{{ view.revision }}">
+                        <input type="hidden" name="slot_name" value="{{ view.settings.slot_name }}">
+                        <button id="watch-action" type="submit" class="button">{{ t('start') }}</button>
+                    </form>
+                {% endif %}
+            </div>
+        </section>
+        <section class="section history" aria-labelledby="history-heading">
+            <div class="setting-row history-heading">
+                <h2 id="history-heading">{{ t('history') }}</h2>
+                <p class="muted">{{ history | length }} {{ t('version_count') }}</p>
+            </div>
+            {% if not history %}<p class="empty-history">{{ t('empty_history') }}</p>{% endif %}
+            <ul class="versions">
+                {% for snapshot in history %}
+                    <li class="version">
+                        {% include 'partials/preview.html' %}
+                        <div class="version-info">
+                            <h3 class="game-id">{{ snapshot.game_id }}</h3>
+                            <p class="muted">{{ snapshot.size | file_size }}{% if snapshot.kind == 'before_restore' %} · {{ t('before_restore') }}{% endif %}</p>
+                            <dl class="dates">
+                                <div><dt>{{ t('saved_at') }}</dt><dd>{{ snapshot.saved_at | timestamp }}</dd></div>
+                                <div><dt>{{ t('backed_up_at') }}</dt><dd>{{ snapshot.backed_up_at | timestamp }}</dd></div>
+                            </dl>
+                        </div>
+                        <div class="version-actions">
+                            <a id="download-{{ snapshot.id }}" class="button" href="{{ url_for('download', snapshot_id=snapshot.id) }}">{{ t('download') }}</a>
+                            {% if restore_available and snapshot.restorable %}
+                                <a id="restore-{{ snapshot.id }}" class="button" href="{{ url_for('restore_form', snapshot_id=snapshot.id) }}">{{ t('restore') }}</a>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+    </div>
+{% endif %}

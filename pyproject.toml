@@ -7,7 +7,13 @@ authors = [
     { name = "sablefish357", email = "sablefish357@gmail.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "fastapi>=0.162.0",
+    "jinja2>=3.1.6",
+    "python-multipart>=0.0.33",
+    "uvicorn>=0.54.0",
+    "watchdog>=7.0.0",
+]
 
 [project.scripts]
 bg3-honour-saver = "bg3_honour_saver:main"

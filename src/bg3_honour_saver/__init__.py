@@ -1,2 +1,3 @@
-def main() -> None:
-    print("Hello from bg3-honour-saver!")
+from .main import main
+
+__all__ = ["main"]
