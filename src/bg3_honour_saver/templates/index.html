@@ -73,6 +73,20 @@
                         </div>
                         {{ folder_button('story', 'change_story') }}
                     </div>
+                    <div class="setting-row retention-setting">
+                        <div>
+                            <h2 id="backup-limit-heading">{{ t('backup_limit') }}</h2>
+                            <p id="backup-limit-help" class="muted">{{ t('backup_limit_help') }}</p>
+                        </div>
+                        <form class="limit-form" method="post" action="{{ url_for('set_backup_limit') }}" data-submit-once>
+                            <input type="hidden" name="token" value="{{ csrf }}">
+                            <input type="hidden" name="revision" value="{{ view.revision }}">
+                            <input id="backup-limit" type="number" name="max_backups" min="0" step="1"
+                                   value="{{ view.settings.max_backups }}" required
+                                   aria-labelledby="backup-limit-heading" aria-describedby="backup-limit-help">
+                            <button type="submit" class="button">{{ t('save_limit') }}</button>
+                        </form>
+                    </div>
                     {% if notice %}
                         <p class="message" role="status">{{ t(notice.key) }} {% if notice.detail %}<span class="path">{{ notice.detail | display_paths }}</span>{% endif %}</p>
                     {% endif %}

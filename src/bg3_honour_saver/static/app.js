@@ -1,7 +1,31 @@
-for (const form of document.querySelectorAll("[data-submit-once]")) {
-    const button = form.querySelector("button[type=submit]");
-    form.addEventListener("submit", () => { button.disabled = true; });
-    window.addEventListener("pageshow", () => { button.disabled = false; });
+document.addEventListener("submit", (event) => {
+    if (event.target.matches("[data-submit-once]")) {
+        event.target.querySelector("button[type=submit]").disabled = true;
+    }
+});
+
+window.addEventListener("pageshow", () => {
+    for (const button of document.querySelectorAll("[data-submit-once] button[type=submit]")) {
+        button.disabled = false;
+    }
+});
+
+function showMissingPreview(img) {
+    const label = document.createElement("span");
+    label.textContent = img.parentElement.dataset.noPreview;
+    img.replaceWith(label);
+}
+
+document.addEventListener("error", (event) => {
+    if (event.target.matches?.(".preview img")) {
+        showMissingPreview(event.target);
+    }
+}, true);
+
+for (const img of document.querySelectorAll(".preview img")) {
+    if (img.complete && img.naturalWidth === 0) {
+        showMissingPreview(img);
+    }
 }
 
 // Keep polling when the CDN is unavailable. All forms are ordinary HTML forms.

@@ -1,5 +1,6 @@
 import logging
 import sqlite3
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from pathlib import Path
 from threading import Condition, Lock, Thread
@@ -42,11 +43,12 @@ class SaveEvents(FileSystemEventHandler):
 
 
 class SaveWatcher:
-    def __init__(self, workspace: Workspace, story: Path, slot_name: str):
+    def __init__(self, workspace: Workspace, story: Path, slot_name: str, operation: Lock, max_backups: int):
         self.workspace = workspace
         self.story = story
         self.slot = story / slot_name
-        self.operation = Lock()
+        self.operation = operation
+        self.max_backups = max_backups
         self.status = Notice("starting")
         self._condition = Condition()
         self._due: float | None = monotonic() + QUIET_SECONDS
@@ -126,6 +128,7 @@ class SaveWatcher:
                             continue
                         self.status = Notice("backing_up")
                         capture(self.workspace, self.slot, expected=before)
+                        self.workspace.prune_backups(self.max_backups)
                     except FileNotFoundError:
                         self.status = Notice("waiting_save")
                     except SaverError as error:
@@ -156,6 +159,7 @@ class Saver:
     def __init__(self):
         self.view: View | None = None
         self._lock = Lock()
+        self._operation = Lock()
 
     def _current(self, revision: str) -> View:
         if self.view is None or self.view.revision != revision:
@@ -181,9 +185,9 @@ class Saver:
             except (OSError, SaverError) as error:
                 notice = Notice("story_unavailable", str(error))
             else:
-                settings = Settings(story, settings.slot_name, settings.enabled)
+                settings = replace(settings, story=story)
                 if settings.enabled and settings.slot_name:
-                    watcher = SaveWatcher(workspace, story, settings.slot_name)
+                    watcher = SaveWatcher(workspace, story, settings.slot_name, self._operation, settings.max_backups)
         self.view = View(workspace, settings, uuid4().hex, watcher, notice)
 
     def open_library(self, path: Path) -> None:
@@ -193,21 +197,26 @@ class Saver:
             separate_paths(root, default)
             if self.view and self.view.settings.story:
                 separate_paths(root, self.view.settings.story)
-            workspace = Workspace.open(root)
-            notice = None
-            try:
-                settings = workspace.read_settings()
-            except SaverError as error:
-                settings = Settings()
-                notice = Notice(error.key, error.detail)
+            with self._operation:
+                workspace = Workspace.open(root)
+                notice = None
+                try:
+                    settings = workspace.read_settings()
+                except SaverError as error:
+                    settings = Settings()
+                    notice = Notice(error.key, error.detail)
             self._activate(workspace, settings, notice)
+            with self._operation:
+                workspace.prune_backups(settings.max_backups)
 
     def set_story(self, revision: str, path: Path) -> None:
         with self._lock:
             view = self._current(revision)
             story = directory(path)
             separate_paths(view.workspace.root, story)
-            settings = view.settings if view.settings.story == story else Settings(story)
+            settings = view.settings
+            if settings.story != story:
+                settings = replace(settings, story=story, slot_name=None, enabled=False)
             view.workspace.write_settings(settings)
             self._activate(view.workspace, settings)
 
@@ -219,37 +228,62 @@ class Saver:
             story = directory(view.settings.story_path)
             separate_paths(view.workspace.root, story)
             honour_file(story / slot_name)
-            settings = Settings(story, slot_name, True)
+            settings = replace(view.settings, story=story, slot_name=slot_name, enabled=True)
             view.workspace.write_settings(settings)
             self._activate(view.workspace, settings)
 
     def pause(self, revision: str) -> None:
         with self._lock:
             view = self._current(revision)
-            settings = Settings(view.settings.story, view.settings.slot_name)
+            settings = replace(view.settings, enabled=False)
             view.workspace.write_settings(settings)
             self._activate(view.workspace, settings)
 
-    def restore(self, revision: str, snapshot_id: str, confirmed_story: Path) -> Snapshot:
+    def set_limit(self, revision: str, limit: int) -> None:
         with self._lock:
             view = self._current(revision)
+            if limit < 0:
+                raise SaverError("invalid_limit")
+            settings = replace(view.settings, max_backups=limit)
+            with self._operation:
+                view.workspace.write_settings(settings)
+                if view.watcher:
+                    view.watcher.max_backups = limit
+                self.view = replace(view, settings=settings, revision=uuid4().hex)
+                view.workspace.prune_backups(limit)
+
+    @contextmanager
+    def snapshot(self, snapshot_id: str, revision: str | None = None):
+        with self._lock:
+            view = self._current(revision) if revision is not None else self.view
+            if view is None:
+                raise SaverError("missing_backup", snapshot_id)
+            with self._operation:
+                snapshot = view.workspace.db.get(snapshot_id)
+                if snapshot is None or not valid_component(snapshot.slot_name):
+                    raise SaverError("missing_backup", snapshot_id)
+                yield view, snapshot
+
+    def delete(self, revision: str, snapshot_id: str) -> None:
+        with self.snapshot(snapshot_id, revision) as (view, snapshot):
+            view.workspace.recover_deletions()
+            view.workspace.remove_snapshot(snapshot)
+
+    def restore(self, revision: str, snapshot_id: str, confirmed_story: Path) -> Snapshot:
+        with self.snapshot(snapshot_id, revision) as (view, snapshot):
             story = directory(view.settings.story_path)
             if story != confirmed_story:
                 raise SaverError("stale_page")
-            snapshot = view.workspace.db.get(snapshot_id)
-            if snapshot is None:
-                raise SaverError("missing_backup", snapshot_id)
             if view.watcher is None:
-                restore_snapshot(view.workspace, story, snapshot)
+                restore_snapshot(view.workspace, story, snapshot, max_backups=view.settings.max_backups)
             else:
                 watcher = view.watcher
-                with watcher.operation:
-                    previous = watcher.status
-                    watcher.status = Notice("restoring")
-                    try:
-                        restore_snapshot(view.workspace, story, snapshot)
-                    finally:
-                        watcher.status = previous
-                        watcher.schedule()
+                previous = watcher.status
+                watcher.status = Notice("restoring")
+                try:
+                    restore_snapshot(view.workspace, story, snapshot, max_backups=view.settings.max_backups)
+                finally:
+                    watcher.status = previous
+                    watcher.schedule()
             self.view = replace(view, revision=uuid4().hex)
             return snapshot

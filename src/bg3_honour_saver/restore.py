@@ -9,7 +9,7 @@ from .snapshots import capture, deny_writers, file_digest, inventory, stable_cop
 from .workspace import Workspace
 
 
-def restore_snapshot(workspace: Workspace, story: Path, snapshot: Snapshot) -> None:
+def restore_snapshot(workspace: Workspace, story: Path, snapshot: Snapshot, *, max_backups: int = 0) -> None:
     story = directory(story)
     separate_paths(workspace.root, story)
     if not valid_component(snapshot.slot_name):
@@ -38,6 +38,7 @@ def restore_snapshot(workspace: Workspace, story: Path, snapshot: Snapshot) -> N
             files = (target / relative for relative, entry in before.items() if not entry.folder)
             with deny_writers(files):
                 capture(workspace, target, kind="before_restore", expected=before)
+            workspace.prune_backups(max_backups)
             # Windows may refuse to move a directory while its files have open handles.
             if inventory(target) != before:
                 raise SaverError("save_changing")

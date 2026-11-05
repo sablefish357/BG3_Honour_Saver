@@ -71,6 +71,10 @@ class Database:
             row = connection.execute("SELECT * FROM snapshots WHERE id = ?", (snapshot_id,)).fetchone()
             return Snapshot(**row) if row else None
 
+    def remove(self, snapshot_id: str) -> None:
+        with self.connect() as connection:
+            connection.execute("DELETE FROM snapshots WHERE id = ?", (snapshot_id,))
+
     def baseline(self, slot_name: str) -> str | None:
         with self.connect() as connection:
             row = connection.execute(

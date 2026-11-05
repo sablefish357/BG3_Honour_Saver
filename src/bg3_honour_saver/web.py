@@ -19,7 +19,7 @@ from starlette.types import Receive, Scope, Send
 
 from .bg3 import (
     PREVIEW_FILES, SaverError, candidates, default_story, directory, game_id, is_link,
-    separate_paths, valid_component,
+    separate_paths,
 )
 from .folder_picker import pick_folder
 from .i18n import translate
@@ -169,15 +169,6 @@ def create_app() -> FastAPI:
             "restore_available": game_folder(view) is not None,
         }
 
-    def find_snapshot(snapshot_id: str):
-        view = saver.view
-        if view is None:
-            raise SaverError("missing_backup", snapshot_id)
-        snapshot = view.workspace.db.get(snapshot_id)
-        if snapshot is None or not valid_component(snapshot.slot_name):
-            raise SaverError("missing_backup", snapshot_id)
-        return view, snapshot
-
     @app.exception_handler(SaverError)
     async def saver_error(request: Request, error: SaverError):
         return render(request, "index.html", status=400, page="error", message=Notice(error.key, error.detail))
@@ -255,45 +246,57 @@ def create_app() -> FastAPI:
         saver.pause(revision)
         return go(request, "home")
 
+    @app.post("/settings/limit")
+    def set_backup_limit(request: Request, token: Field, revision: Field, max_backups: Annotated[int, Form(ge=0)]):
+        check_token(token)
+        saver.set_limit(revision, max_backups)
+        return go(request, "home")
+
+    @app.post("/versions/{snapshot_id}/delete")
+    def delete_version(request: Request, snapshot_id: str, token: Field, revision: Field):
+        check_token(token)
+        saver.delete(revision, snapshot_id)
+        return go(request, "home")
+
     @app.get("/versions/{snapshot_id}/preview")
     def preview(snapshot_id: str):
-        view, snapshot = find_snapshot(snapshot_id)
-        if snapshot.preview not in PREVIEW_FILES:
-            return Response(status_code=404)
-        path = view.workspace.snapshot_path(snapshot) / snapshot.preview
-        if not path.is_file() or is_link(path.lstat()):
-            return Response(status_code=404)
-        media_type = {".webp": "image/webp", ".png": "image/png"}.get(path.suffix, "image/jpeg")
-        return FileResponse(path, media_type=media_type, headers={"Cache-Control": "private, max-age=86400"})
+        with saver.snapshot(snapshot_id) as (view, snapshot):
+            if snapshot.preview not in PREVIEW_FILES:
+                return Response(status_code=404)
+            path = view.workspace.snapshot_path(snapshot) / snapshot.preview
+            if not path.is_file() or is_link(path.lstat()):
+                return Response(status_code=404)
+            media_type = {".webp": "image/webp", ".png": "image/png"}.get(path.suffix, "image/jpeg")
+            return Response(path.read_bytes(), media_type=media_type, headers={"Cache-Control": "private, max-age=86400"})
 
     @app.get("/versions/{snapshot_id}/download")
     def download(snapshot_id: str):
-        view, snapshot = find_snapshot(snapshot_id)
-        with NamedTemporaryFile(suffix=".zip", delete=False) as stream:
-            archive = Path(stream.name)
-        try:
-            write_zip(view.workspace, snapshot, archive)
-            date = datetime.fromtimestamp(snapshot.saved_at).strftime("%Y%m%d-%H%M%S")
-            return TemporaryZipResponse(
-                archive, media_type="application/zip", filename=f"{snapshot.slot_name}-{date}.zip",
-                headers={"Cache-Control": "no-store"},
-            )
-        except Exception:
-            archive.unlink(missing_ok=True)
-            raise
+        with saver.snapshot(snapshot_id) as (view, snapshot):
+            with NamedTemporaryFile(suffix=".zip", delete=False) as stream:
+                archive = Path(stream.name)
+            try:
+                write_zip(view.workspace, snapshot, archive)
+                date = datetime.fromtimestamp(snapshot.saved_at).strftime("%Y%m%d-%H%M%S")
+                return TemporaryZipResponse(
+                    archive, media_type="application/zip", filename=f"HonourMode-{date}.zip",
+                    headers={"Cache-Control": "no-store"},
+                )
+            except Exception:
+                archive.unlink(missing_ok=True)
+                raise
 
     @app.get("/versions/{snapshot_id}/restore")
     def restore_form(request: Request, snapshot_id: str):
-        view, snapshot = find_snapshot(snapshot_id)
-        if not snapshot.restorable:
-            raise SaverError("damaged_backup", snapshot.id)
-        story = game_folder(view)
-        if story is None:
-            raise SaverError("choose_story")
-        return render(
-            request, "index.html", page="restore", view=view, snapshot=snapshot,
-            story=story, destination=story / snapshot.slot_name,
-        )
+        with saver.snapshot(snapshot_id) as (view, snapshot):
+            if not snapshot.restorable:
+                raise SaverError("damaged_backup", snapshot.id)
+            story = game_folder(view)
+            if story is None:
+                raise SaverError("choose_story")
+            return render(
+                request, "index.html", page="restore", view=view, snapshot=snapshot,
+                story=story, destination=story / snapshot.slot_name,
+            )
 
     @app.post("/versions/{snapshot_id}/restore")
     def restore_version(

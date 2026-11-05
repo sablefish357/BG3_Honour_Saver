@@ -1,4 +1,4 @@
-<div class="preview">
+<div class="preview" data-no-preview="{{ t('no_preview') }}">
     {% if snapshot.preview %}
         <img src="{{ url_for('preview', snapshot_id=snapshot.id) }}" alt="" loading="lazy" width="320" height="180">
     {% else %}

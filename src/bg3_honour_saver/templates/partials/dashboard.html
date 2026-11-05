@@ -32,7 +32,11 @@
         <section class="section history" aria-labelledby="history-heading">
             <div class="setting-row history-heading">
                 <h2 id="history-heading">{{ t('history') }}</h2>
-                <p class="muted">{{ history | length }} {{ t('version_count') }}</p>
+                <div class="history-tools">
+                    <p class="muted">{{ history | length }} {{ t('version_count') }}</p>
+                    <a id="refresh-history" class="button" href="{{ url_for('home') }}"
+                       hx-get="{{ endpoint }}" hx-target="#dashboard" hx-swap="outerHTML">{{ t('refresh') }}</a>
+                </div>
             </div>
             {% if not history %}<p class="empty-history">{{ t('empty_history') }}</p>{% endif %}
             <ul class="versions">
@@ -40,7 +44,6 @@
                     <li class="version">
                         {% include 'partials/preview.html' %}
                         <div class="version-info">
-                            <h3 class="game-id">{{ snapshot.game_id }}</h3>
                             <p class="muted">{{ snapshot.size | file_size }}{% if snapshot.kind == 'before_restore' %} · {{ t('before_restore') }}{% endif %}</p>
                             <dl class="dates">
                                 <div><dt>{{ t('saved_at') }}</dt><dd>{{ snapshot.saved_at | timestamp }}</dd></div>
@@ -52,6 +55,11 @@
                             {% if restore_available and snapshot.restorable %}
                                 <a id="restore-{{ snapshot.id }}" class="button" href="{{ url_for('restore_form', snapshot_id=snapshot.id) }}">{{ t('restore') }}</a>
                             {% endif %}
+                            <form method="post" action="{{ url_for('delete_version', snapshot_id=snapshot.id) }}" data-submit-once>
+                                <input type="hidden" name="token" value="{{ csrf }}">
+                                <input type="hidden" name="revision" value="{{ view.revision }}">
+                                <button id="delete-{{ snapshot.id }}" type="submit" class="button danger">{{ t('delete') }}</button>
+                            </form>
                         </div>
                     </li>
                 {% endfor %}
