@@ -7,10 +7,7 @@
         {% include 'partials/preview.html' %}
         <div class="version-info">
             <p class="muted">{{ snapshot.size | file_size }}</p>
-            <dl class="dates">
-                <div><dt>{{ t('saved_at') }}</dt><dd>{{ snapshot.saved_at | timestamp }}</dd></div>
-                <div><dt>{{ t('backed_up_at') }}</dt><dd>{{ snapshot.backed_up_at | timestamp }}</dd></div>
-            </dl>
+            {% include 'partials/dates.html' %}
         </div>
     </div>
     <p>{{ t('restore_to') }} <span class="path">{{ destination | display_paths }}</span></p>

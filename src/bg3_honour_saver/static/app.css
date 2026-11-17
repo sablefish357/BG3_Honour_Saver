@@ -27,7 +27,7 @@ button, input { font: inherit; }
 button, summary { cursor: pointer; }
 button:disabled { cursor: wait; opacity: 0.55; }
 form, p, dl, dd { margin: 0; }
-h1, h2, h3 { font-weight: 500; line-height: 1.2; margin: 0; }
+h1, h2 { font-weight: 500; line-height: 1.2; margin: 0; }
 ul { list-style: none; padding: 0; margin: 0; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 
@@ -92,7 +92,7 @@ main { width: min(calc(100% - 2.5rem), 68rem); flex: 1; margin: 0 auto; padding:
 .button.danger { color: #944438; }
 .button.danger:hover { border-color: #c8a097; background: #fcf5f3; }
 .setting-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.9rem 0; }
-.setting-row + .setting-row, .candidates li + li { border-top: 1px solid var(--line); }
+.setting-row + .setting-row { border-top: 1px solid var(--line); }
 .setting-row > div, .version-info { min-width: 0; }
 .setting-row h2 + p { margin-top: 0.25rem; }
 .muted, .path, .empty-history { color: var(--muted); font-size: 0.92rem; }

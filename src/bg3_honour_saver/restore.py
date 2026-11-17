@@ -9,6 +9,10 @@ from .snapshots import capture, deny_writers, file_digest, inventory, stable_cop
 from .workspace import Workspace
 
 
+def occupied(path: Path) -> bool:
+    return path.exists() or path.is_symlink() or path.is_junction()
+
+
 def restore_snapshot(workspace: Workspace, story: Path, snapshot: Snapshot, *, max_backups: int = 0) -> None:
     story = directory(story)
     separate_paths(workspace.root, story)
@@ -32,7 +36,7 @@ def restore_snapshot(workspace: Workspace, story: Path, snapshot: Snapshot, *, m
         if file_digest(incoming / SAVE_FILE) != snapshot.fingerprint:
             raise SaverError("damaged_backup", snapshot.id)
 
-        if target.exists() or target.is_symlink() or target.is_junction():
+        if occupied(target):
             before = inventory(target)
             time.sleep(1)
             files = (target / relative for relative, entry in before.items() if not entry.folder)
@@ -50,7 +54,7 @@ def restore_snapshot(workspace: Workspace, story: Path, snapshot: Snapshot, *, m
             if after_move != before:
                 raise SaverError("save_changing")
 
-        if target.exists() or target.is_symlink() or target.is_junction():
+        if occupied(target):
             raise SaverError("save_changing")
         incoming.rename(target)
         installed = True
@@ -60,7 +64,7 @@ def restore_snapshot(workspace: Workspace, story: Path, snapshot: Snapshot, *, m
             if installed:
                 target.rename(incoming)
             if displaced:
-                if target.exists() or target.is_symlink() or target.is_junction():
+                if occupied(target):
                     raise SaverError("save_changing")
                 previous.rename(target)
         except (OSError, SaverError) as error:
